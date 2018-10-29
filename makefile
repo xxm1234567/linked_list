@@ -1,46 +1,47 @@
-# make  - to compile normal run
-# make test - to compile for unit testing 
-
 GTEST_DIR=~/googletest/googletest
+PROJ=linked_list
+TEST_CASE=test_case
+#TEST_CASE=student_test
+COPTS=-fprofile-arcs -ftest-coverage
+LDFLAGS=-fprofile-arcs -ftest-coverage
 
-COPTS=-Wall -funsigned-char  -fpermissive
-LDFLAGS=
+default: test
 
-PROJ=linkedList
-
-######### Main targets ##########
 main: main.o $(PROJ).o
-	gcc main.o $(PROJ).o -o main $(LDFLAGS)
+	gcc main.o $(PROJ).o -o main
 
-test: Gtest_main.o linked_list_testcase.o $(PROJ)_test.o libgtest.a
-	g++  $(LDFLAGS) -I $(GTEST_DIR)/include -pthread $(PROJ)_test.o linked_list_testcase.o Gtest_main.o libgtest.a -o test
+test: Gtest_main.o $(TEST_CASE).o $(PROJ)_test.o libgtest.a
+	g++ -I $(GTEST_DIR)/include -pthread $(TEST_CASE).o $(PROJ)_test.o Gtest_main.o libgtest.a $(COPTS) -o my_test
 
-########## Normal ###########
+######## Googletest Lib ##########
+libgtest.a:
+	g++ -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -pthread -c $(GTEST_DIR)/src/gtest-all.cc
+	ar -rv libgtest.a gtest-all.o
+##### Test ###############
+Gtest_main.o: Gtest_main.c
+	g++ -c -isystem $(GTEST_DIR)/include $(COPTS) -I$(GTEST_DIR) Gtest_main.c
 
-$(PROJ).o: $(PROJ).c 
-	gcc  -c $(PROJ).c
+$(PROJ)_test.o: $(PROJ).c $(PROJ).h
+	g++ -c -isystem $(GTEST_DIR)/include $(COPTS) -I$(GTEST_DIR) $(PROJ).c -o $(PROJ)_test.o
+
+$(TEST_CASE).o: $(TEST_CASE).c
+	g++ -c -isystem $(GTEST_DIR)/include -I$(GTEST_DIR)  $(TEST_CASE).c 
+##### Normal #######################
+
+$(PROJ).o: $(PROJ).c $(PROJ).h
+	g++ -c $(PROJ).c
 
 main.o: main.c $(PROJ).h
 	gcc -c main.c
 
-########## Unit test ########
-
-Gtest_main.o: Gtest_main.c
-	g++ -c -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) Gtest_main.c
-
-$(PROJ)_test.o: $(PROJ).c 
-	g++  -c $(PROJ).c -o $(PROJ)_test.o
-
-linked_list_testcase.o: linked_list_testcase.c
-	g++ -c -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) $(COPTS) linked_list_testcase.c
-
-########## Google Test framework ############
-libgtest.a:
-	g++ -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -pthread -c $(GTEST_DIR)/src/gtest-all.cc
-	ar -rv libgtest.a gtest-all.o
-
-########## Clean ######################
+###########################
 clean:
 	rm -f *.o
 
-
+report:
+	COV_OUTPUT=./cov_output
+	lcov -c -i -d . -o .coverage.base
+	lcov -c -d . -o .coverage.run
+	lcov -d . -a .coverage.base -a .coverage.run -o .coverage.total
+	genhtml --no-branch-coverage -o $(COV_OUTPUT) .coverage.total
+	rm -f .coverage.base .coverage.run .coverage.tota

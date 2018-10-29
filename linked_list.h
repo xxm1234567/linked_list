@@ -14,6 +14,8 @@ struct linked_list
 	char * data;
 	int index;//not used
 	struct linked_list * next;
+	struct linked_list * prior;
+
 };
 
 // create a new list item and add that to end of list
@@ -44,5 +46,4 @@ int sort_list(linked_list *ll);
 int linkedlist_status(linked_list *ll);
 
 #endif // !_LINKEDLIST_H_
-
 
